@@ -1,0 +1,47 @@
+services:
+  # Padrão: NHooks com SQLite embutido (deploy de 1 arquivo, zero dependência).
+  nhooks:
+    build: .
+    container_name: nhooks
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      LISTEN_ADDR: ":8080"
+      PUBLIC_URL: "${PUBLIC_URL:-http://localhost:8080}"
+      DB_PATH: "/data/nhooks.db"
+    volumes:
+      - nhooks-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Modo "escala" (opcional). Ative com: docker compose --profile scale up -d
+  redis:
+    image: redis:7-alpine
+    container_name: nhooks-redis
+    restart: unless-stopped
+    profiles: ["scale"]
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: nhooks-postgres
+    restart: unless-stopped
+    profiles: ["scale"]
+    environment:
+      - POSTGRES_DB=nhooks
+      - POSTGRES_USER=nhooks
+      - POSTGRES_PASSWORD=nhooks
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+volumes:
+  nhooks-data:
+  redis-data:
+  pg-data:

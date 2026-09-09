@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHooks · Admin</title>
+<link rel="icon" id="app-favicon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/panel.css">
+<link rel="stylesheet" href="/static/panel-extra.css">
+<style>
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.tab{padding:10px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;font-weight:800;font-size:13px}
+.tab.on{background:var(--primary,#12948e);color:#fff;border-color:transparent}
+html[data-theme=dark] .tab{background:#111a2e;border-color:#26364f;color:#e5eefb}
+html[data-theme=dark] .tab.on{background:linear-gradient(135deg,var(--primary,#12948e),var(--secondary,#0d7a75));color:#fff}
+#panel{min-width:0}.stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.adm-table{display:grid;gap:8px}.adm-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px}.adm-copy{min-width:0;overflow-wrap:anywhere}.mono-key{font-family:"JetBrains Mono",monospace;font-size:12px;overflow-wrap:anywhere}
+html[data-theme=dark] .adm-row{background:#0b1220;border-color:#26364f;color:#e5eefb}
+.adm-row .meta{font-size:12px;color:#64748b}
+html[data-theme=dark] .adm-row .meta{color:#94a3b8}
+.login{max-width:420px;margin:8vh auto;padding:22px}
+.login .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px}
+html[data-theme=dark] .login .card{background:#111a2e;border-color:#26364f}
+.logout{color:#f87171}
+html[data-theme="light"] body{background:#f4f7fb;color:#0f172a}
+html[data-theme="light"] .topbar{background:#fff;border-color:#e2e8f0}
+html[data-theme="light"] .adm-row,html[data-theme="light"] .stat{background:#fff;color:#0f172a;border-color:#e2e8f0}
+html[data-theme="light"] .login .card{background:#fff;border-color:#e2e8f0}
+html[data-theme="light"] .tabs .tab{background:#fff;border-color:#e2e8f0;color:#0f172a}
+html[data-theme="light"] .adm-row .meta,html[data-theme="light"] .stat span{color:#64748b}
+html[data-theme="light"] .brand-title strong{color:#0f172a}
+/* Login caprichado */
+.login{max-width:440px;margin:10vh auto;padding:22px}
+.login .card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;box-shadow:0 30px 70px rgba(15,23,42,.16)}
+.login .mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--primary,#12948e),var(--secondary,#0d7a75));display:grid;place-items:center;color:#fff;font-weight:900;font-size:24px;margin-bottom:18px}
+.login .eyebrow{color:var(--primary,#12948e);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;display:block;margin-bottom:6px}
+.login h2{color:#0f172a;font-family:"Syne",Arial,sans-serif;font-size:28px;letter-spacing:-.05em;line-height:1.05;margin:0 0 8px}
+.login .sub{color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px}
+.login input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a;font-size:14px;outline:none;transition:.15s}
+.login input:focus{border-color:var(--primary,#12948e);box-shadow:0 0 0 3px rgba(18,148,142,.15);background:#fff}
+.login .btn{width:100%;padding:13px;margin-top:12px;border-radius:12px;font-size:14px}
+.login .hint{margin-top:14px;font-size:12px;color:#94a3b8;line-height:1.5;text-align:center}
+.login-error{display:none;margin:12px 0 0;padding:10px 12px;border-radius:10px;background:#fef2f2;color:#b42318;font-size:13px}.login-error.show{display:block}
+html[data-theme=dark] .login h2{color:#f8fafc}html[data-theme=dark] .login .sub{color:#cbd5e1}html[data-theme=dark] .login input{background:#0b1220;color:#e5eefb;border-color:#26364f}
+@media(max-width:760px){.stats-grid{grid-template-columns:1fr!important}.tabs{display:grid;grid-template-columns:1fr 1fr}.tab{min-height:46px}.adm-row{grid-template-columns:1fr}.adm-row .btn{width:100%}.login{margin:4vh auto;padding:0}.panel{padding:18px}.event-actions{width:100%}.event-actions .btn{flex:1}}
+</style>
+</head>
+<body style="--primary:#12948e;--secondary:#0d7a75;--light-brand:#6dcfc9;--logo-height:56px">
+<div class="app">
+  <header class="topbar" id="adm-topbar" style="display:none">
+    <div class="brand"><div class="brand-fallback">N</div><div class="brand-title"><strong id="admin-brand-name">NHooks Admin</strong><span>Gestão operacional</span></div></div>
+    <nav class="nav-actions"><button class="btn ghost" type="button" onclick="logout()">Sair</button></nav>
+  </header>
+
+  <div id="login" style="display:none">
+    <div class="login"><div class="card">
+      <div class="mark">N</div>
+      <span class="eyebrow">Painel de administração</span>
+      <h2>Acesso restrito</h2>
+      <p class="sub">Informe a chave de administração (<span style="font-family:monospace;font-size:12px">SYSTEM_ADMIN_KEY</span>) para gerenciar endpoints, eventos e clientes.</p>
+      <form onsubmit="login(event)">
+        <label for="adm-key">Chave de administração</label>
+        <input id="adm-key" type="password" placeholder="Chave de administração" autocomplete="off" required>
+        <button class="btn primary" type="submit">Entrar</button>
+      </form>
+      <div class="login-error" id="login-error" role="alert"></div>
+      <p class="hint">A chave fica só no seu navegador e é usada nas chamadas administrativas.</p>
+    </div></div>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div class="tabs" role="tablist" aria-label="Seções administrativas">
+      <button class="tab on" role="tab" aria-selected="true" aria-controls="view-over" id="tb-over" onclick="tab('over')">Visão geral</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="view-ep" id="tb-ep" onclick="tab('ep')">Endpoints</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="view-ev" id="tb-ev" onclick="tab('ev')">Eventos</button>
+      <button class="tab" role="tab" aria-selected="false" aria-controls="view-ad" id="tb-ad" onclick="tab('ad')">Clientes</button>
+    </div>
+
+    <section id="view-over">
+      <div class="stats-grid">
+        <div class="stat"><span>Endpoints</span><strong id="ad-endpoints">0</strong></div>
+        <div class="stat"><span>Eventos</span><strong id="ad-events">0</strong></div>
+        <div class="stat"><span>Armazenamento</span><strong id="ad-bytes">0 B</strong></div>
+        <div class="stat"><span>Clientes</span><strong id="ad-admins">0</strong></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-title"><div><h2>Ações de manutenção</h2><p>Limpeza e retenção aplicadas globalmente.</p></div>
+          <div class="panel-actions">
+            <button class="btn ghost" type="button" onclick="clearRetention()">Aplicar retenção</button>
+            <button class="btn danger" type="button" onclick="clearAll()">Limpar todos os eventos</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-ep" style="display:none">
+      <div class="panel"><div class="panel-title"><div><h2>Endpoints</h2><p>Todas as URLs de ingestão do sistema.</p></div></div>
+        <div class="adm-table" id="ad-ep-list"></div>
+      </div>
+    </section>
+    <section id="view-ev" style="display:none">
+      <div class="panel"><div class="panel-title"><div><h2>Eventos</h2><p>Últimos eventos recebidos.</p></div></div>
+        <div class="events-list" id="ad-ev-list"></div>
+      </div>
+    </section>
+    <section id="view-ad" style="display:none">
+      <div class="panel"><div class="panel-title"><div><h2>Clientes</h2><p>Administradores vinculados aos painéis.</p></div></div>
+        <div class="adm-table" id="ad-ad-list"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="admin-event-modal" onclick="closeEventModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="admin-event-title">
+    <div class="modal-head"><div><h3 id="admin-event-title">Detalhes do evento</h3><p id="admin-event-subtitle"></p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideEventModal()">×</button></div>
+    <div class="modal-body" id="admin-event-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const CFG = __NHOOKS_CONFIG__;
+const API = '/api';
+const KEY = 'nhooks_sys_admin';
+let adminKey = localStorage.getItem(KEY) || '', currentEvent = null;
+
+document.addEventListener('DOMContentLoaded', ()=>{ const auto=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'; document.documentElement.setAttribute('data-theme', CFG.theme==='auto'?auto:(CFG.theme==='light'?'light':'dark')); document.body.style.setProperty('--primary',CFG.brandColor||'#12948e');document.body.style.setProperty('--secondary',CFG.secondary||'#0d7a75');document.body.style.setProperty('--light-brand',CFG.dim||'#6dcfc9');document.body.style.setProperty('--logo-height',CFG.logoHeight||'56px');document.getElementById('admin-brand-name').textContent=(CFG.brandName||'NHooks')+' Admin';if(CFG.faviconUrl)document.getElementById('app-favicon').href=CFG.faviconUrl;if(CFG.logoUrl){const fallback=document.querySelector('.brand-fallback');const logo=document.createElement('img');logo.className='brand-logo';logo.alt=CFG.brandName||'Logo';logo.src=CFG.logoUrl;fallback.replaceWith(logo);} boot(adminKey,false); });
+
+async function adminApi(action, post, extra){
+  const p = new URLSearchParams({action,...(extra||{})});
+  const url = API+'?'+p.toString();
+  const options={headers:{'X-Admin-Key':adminKey},cache:'no-store'};
+  if(post!==undefined){ options.method='POST'; options.headers['Content-Type']='application/x-www-form-urlencoded'; options.body=new URLSearchParams(post).toString(); }
+  const response=await fetch(url,options); let data={}; try{data=await response.json()}catch(e){}
+  if(!response.ok||!data.success) throw new Error(data.message||('HTTP '+response.status));
+  return data;
+}
+
+async function boot(candidate,persist){
+  adminKey=(candidate||'').trim();
+  const error=document.getElementById('login-error'); error.classList.remove('show');
+  try{ await adminApi('admin_stats'); if(persist) localStorage.setItem(KEY,adminKey); showPanel(); loadAll(); }
+  catch(e){ if(persist&&adminKey){ error.textContent='Chave inválida ou serviço indisponível.'; error.classList.add('show'); } showLogin(); }
+}
+function showLogin(){ document.getElementById('adm-topbar').style.display='none'; document.getElementById('panel').style.display='none'; document.getElementById('login').style.display='block'; }
+function showPanel(){ document.getElementById('adm-topbar').style.display='flex'; document.getElementById('login').style.display='none'; document.getElementById('panel').style.display='block'; }
+function login(ev){ ev.preventDefault(); const button=ev.submitter; if(button)button.disabled=true; boot(document.getElementById('adm-key').value,true).finally(()=>{if(button)button.disabled=false;}); }
+function logout(){ document.getElementById('adm-key').value=''; adminKey=''; localStorage.removeItem(KEY); showLogin(); }
+
+function tab(name){
+  ['over','ep','ev','ad'].forEach(t=>{ const selected=t===name; document.getElementById('view-'+t).style.display = selected?'block':'none'; document.getElementById('tb-'+t).classList.toggle('on',selected); document.getElementById('tb-'+t).setAttribute('aria-selected',String(selected)); });
+  if(name==='ep') loadEndpoints();
+  if(name==='ev') loadEvents();
+  if(name==='ad') loadAdmins();
+}
+
+async function loadAll(){
+  try{ const [r,a]=await Promise.all([adminApi('admin_stats'),adminApi('admin_admins')]); document.getElementById('ad-endpoints').textContent=r.data.endpoints; document.getElementById('ad-events').textContent=r.data.events; document.getElementById('ad-bytes').textContent=fmtBytes(r.data.storage_bytes); document.getElementById('ad-admins').textContent=a.data.admins.length; }catch(e){ toast(e.message); }
+}
+async function loadEndpoints(){
+  const list = document.getElementById('ad-ep-list');
+  list.innerHTML='<div class="empty">Carregando...</div>';
+  let r; try{r=await adminApi('admin_endpoints')}catch(e){list.innerHTML='<div class="empty">Falha ao carregar endpoints.</div>';return;}
+  if(!r.data.endpoints.length){ list.innerHTML='<div class="empty">Nenhum endpoint.</div>'; return; }
+  list.innerHTML = r.data.endpoints.map(e=>`<div class="adm-row"><div class="adm-copy"><strong>${esc(e.name)}</strong> <span class="meta">${esc(e.slug)} · ${e.events} evento(s)</span><br><span class="meta">dono: <span class="mono-key">${esc(e.admin_key)}</span> · último: ${esc(e.last_event)}</span></div><div><button class="btn small danger" onclick="delEp('${escAttr(e.token)}')">Excluir</button></div></div>`).join('');
+}
+async function loadEvents(){
+  const list=document.getElementById('ad-ev-list'); list.innerHTML='<div class="empty">Carregando...</div>';
+  try{const r=await adminApi('admin_events');list.innerHTML=r.data.html||'<div class="empty">Nenhum evento.</div>';}catch(e){list.innerHTML='<div class="empty">Falha ao carregar eventos.</div>';}
+}
+async function loadAdmins(){
+  const list = document.getElementById('ad-ad-list');
+  list.innerHTML='<div class="empty">Carregando...</div>';
+  let r; try{r=await adminApi('admin_admins')}catch(e){list.innerHTML='<div class="empty">Falha ao carregar clientes.</div>';return;}
+  if(!r.data.admins.length){ list.innerHTML='<div class="empty">Nenhum cliente.</div>'; return; }
+  list.innerHTML = r.data.admins.map(a=>`<div class="adm-row"><div class="adm-copy"><strong class="mono-key">${esc(a.admin_key)}</strong><br><span class="meta">${a.endpoints} endpoint(s) · ${a.events} evento(s) · último acesso ${esc(a.last_seen)}</span></div><div><button class="btn small danger" onclick="delAdmin('${escAttr(a.admin_key)}')">Excluir cliente</button></div></div>`).join('');
+}
+
+async function delEp(token){ if(!confirm('Excluir endpoint e todos os eventos?'))return; try{const r=await adminApi('admin_delete_endpoint',{token});toast(r.data.deleted?'Endpoint removido':'Endpoint não encontrado');await Promise.all([loadEndpoints(),loadAll()]);}catch(e){toast(e.message);} }
+async function delAdmin(k){ if(!confirm('Excluir cliente e todos os dados dele?'))return; try{await adminApi('admin_delete_admin',{admin_key:k});toast('Cliente removido');await Promise.all([loadAdmins(),loadEndpoints(),loadAll()]);}catch(e){toast(e.message);} }
+async function clearRetention(){ try{const r=await adminApi('admin_clear_retention',{});toast(r.data.deleted+' evento(s) removidos pela retenção');loadAll();}catch(e){toast(e.message);} }
+async function clearAll(){ if(!confirm('Apagar TODOS os eventos de todos os clientes?'))return; try{const r=await adminApi('admin_clear_all',{});toast(r.data.deleted+' evento(s) removidos');loadAll();}catch(e){toast(e.message);} }
+async function openEvent(id){ try{const r=await adminApi('admin_event_detail',undefined,{event_id:id});const e=r.data.event;currentEvent=e;document.getElementById('admin-event-title').textContent=(e.method||'')+' · '+(e.endpoint_name||'Endpoint');document.getElementById('admin-event-subtitle').textContent=e.received_at+' · '+e.id;document.getElementById('admin-event-body').innerHTML='<div class="detail-actions"><button class="btn ghost" type="button" onclick="copyCurrentEvent()">Copiar body</button></div><div class="detail-summary"><div><span>Método</span><strong>'+esc(e.method)+'</strong></div><div><span>Endpoint</span><strong>'+esc(e.endpoint_name)+'</strong></div><div><span>IP</span><strong>'+esc(e.ip)+'</strong></div><div><span>Content-Type</span><strong>'+esc(e.content_type)+'</strong></div></div><div class="detail-card"><h4>Payload</h4><pre class="code-block">'+esc(pretty(e.body_json||e.body_raw))+'</pre></div>';document.getElementById('admin-event-modal').classList.add('active');}catch(e){toast(e.message);} }
+async function quickCopyEvent(id){ try{const r=await adminApi('admin_event_detail',undefined,{event_id:id});copyText(r.data.event.body_raw||'');}catch(e){toast(e.message);} }
+function copyCurrentEvent(){if(currentEvent)copyText(currentEvent.body_raw||'');}
+async function askDeleteEvent(id){if(!confirm('Excluir este evento?'))return;try{await adminApi('admin_delete_event',{event_id:id});toast('Evento excluído');loadEvents();loadAll();}catch(e){toast(e.message);}}
+function hideEventModal(){document.getElementById('admin-event-modal').classList.remove('active');currentEvent=null;}
+function closeEventModal(e){if(e.target.id==='admin-event-modal')hideEventModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('admin-event-modal').classList.contains('active'))hideEventModal();});
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('Copiado')).catch(()=>fallbackCopy(t));}else fallbackCopy(t);}
+function fallbackCopy(t){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.left='-9999px';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');document.body.removeChild(a);toast(ok?'Copiado':'Não foi possível copiar');}
+
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escAttr(s){ return (s==null?'':s).replace(/'/g,'\\\''); }
+function pretty(v){if(typeof v==='string'){try{return JSON.stringify(JSON.parse(v),null,2)}catch(e){return v}}return JSON.stringify(v,null,2);}
+function fmtBytes(b){ if(!b) return '0 B'; const u=['B','KB','MB','GB','TB']; let i=0; while(b>=1024&&i<u.length-1){b/=1024;i++;} return b.toFixed(1)+' '+u[i]; }
+</script>
+</body>
+</html>

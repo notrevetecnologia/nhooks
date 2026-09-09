@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHooks</title>
+<link rel="icon" id="app-favicon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/panel.css">
+<link rel="stylesheet" href="/static/panel-extra.css">
+<style>
+.ai-card{background:#0b1220;border:1px solid #1f2a3d;border-radius:12px;padding:12px 14px;margin-top:12px;color:#d7e3f0}
+.ai-card .hd{display:flex;justify-content:space-between;gap:12px;color:#6dcfc9;font-weight:800;font-size:13px;margin-bottom:8px}
+.ai-card p{margin:6px 0 0;font-size:14px}.ai-anoms{margin:8px 0 0;padding:0;list-style:none}.ai-anoms li{background:rgba(18,148,142,.10);border:1px solid rgba(18,148,142,.25);border-radius:10px;padding:8px 12px;margin-bottom:6px;color:#a5f3fc;font-size:13px}
+.ai-status{margin-top:6px;font-size:13px;color:#64748b;line-height:1.5}
+/* Tema claro — garante contraste/legibilidade */
+html[data-theme="light"] body{background:#f4f7fb;color:#0f172a}
+html[data-theme="light"] .topbar{background:#fff;border-color:#e2e8f0}
+html[data-theme="light"] .hero-card,html[data-theme="light"] .side-card,html[data-theme="light"] .panel,html[data-theme="light"] .modal{background:#fff;color:#0f172a;border-color:#e2e8f0}
+html[data-theme="light"] .hero-card h1{color:#0f172a}
+html[data-theme="light"] .hero-card p{color:#475569}
+html[data-theme="light"] .hero-card .eyebrow{color:#0f766e}
+html[data-theme="light"] .brand-title strong{color:#0f172a}
+html[data-theme="light"] .brand-title span,html[data-theme="light"] .muted,html[data-theme="light"] .project-mini{color:#64748b}
+html[data-theme="light"] .btn.ghost{background:#fff;color:#0f172a;border:1px solid #dbe3ef}
+html[data-theme="light"] .stat,html[data-theme="light"] .event-row,html[data-theme="light"] .endpoint-card,html[data-theme="light"] .detail-card,html[data-theme="light"] .live-pill,html[data-theme="light"] .empty{background:#fff;color:#0f172a;border-color:#e2e8f0}
+html[data-theme="light"] .stat span,html[data-theme="light"] .event-meta,html[data-theme="light"] .event-top small{color:#64748b}
+html[data-theme="light"] .event-main p{color:#334155}
+html[data-theme="light"] .event-top strong{color:#0f172a}
+html[data-theme="light"] .footer,html[data-theme="light"] #events-subtitle{color:#64748b}
+html[data-theme="light"] input,html[data-theme="light"] select{background:#fff;color:#0f172a;border-color:#e2e8f0}
+html[data-theme="light"] .ai-card{background:#0b1220;color:#d7e3f0;border-color:#1f2a3d}
+html[data-theme="light"] .create-form label{color:#0f172a}
+</style>
+</head>
+<body style="--primary:#12948e;--secondary:#0d7a75;--light-brand:#6dcfc9;--logo-height:56px">
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-fallback">N</div>
+      <div class="brand-title"><strong id="brand-name">NHooks</strong><span>Webhook Receiver</span></div>
+    </div>
+    <nav class="nav-actions">
+      <button class="btn ghost" type="button" id="minhas-urls" onclick="openEndpointsModal()">Minhas URLs</button>
+      <button class="btn primary" type="button" id="gerar-url" onclick="openCreateEndpoint()">+ Gerar URL</button>
+      <button class="btn ghost" type="button" id="ai-nav">🤖 IA</button>
+      <button class="btn ghost" type="button" onclick="openAboutModal()">Sobre</button>
+      <button class="btn ghost" type="button" onclick="toggleTheme()">Tema</button>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="eyebrow" id="app-eyebrow">Ambiente próprio de testes</span>
+      <h1>Receba e inspecione webhooks em segundos.</h1>
+      <p id="app-description">Gere URLs amigáveis de ingestão, receba eventos GET, POST, PUT, PATCH e DELETE, e acompanhe tudo ao vivo em uma tela limpa.</p>
+    </div>
+    <aside class="side-card">
+      <div class="live-pill"><div class="live-left"><span class="pulse"></span><span>Ao vivo</span></div><small id="last-refresh">Aguardando atualização...</small></div>
+      <div class="project-mini">Salve seu <strong>link administrativo</strong> para acessar e gerenciar suas URLs em outro navegador ou computador. Eventos ficam retidos conforme configurado.</div>
+      <button class="btn primary" style="width:100%" onclick="openEndpointsModal()">Ver minha URL de ingestão</button>
+    </aside>
+  </section>
+
+  <section class="stats-grid">
+    <div class="stat"><span>Total recebido</span><strong id="stat-total">0</strong></div>
+    <div class="stat"><span>Filtrado</span><strong id="stat-filtered">0</strong></div>
+    <div class="stat"><span>URLs geradas</span><strong id="stat-endpoints">0</strong></div>
+    <div class="stat storage-stat">
+      <span>Uso e limites</span>
+      <div class="storage-lines">
+        <div class="storage-line"><b>Espaço</b><strong id="stat-storage-limit">---</strong></div>
+        <div class="storage-line"><b>Eventos</b><strong id="stat-events-limit">---</strong></div>
+      </div>
+    </div>
+    <div class="stat"><span>Último evento</span><strong id="stat-last">---</strong></div>
+  </section>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-title">
+        <div><h2>Eventos recebidos</h2><p id="events-subtitle">0 evento(s).</p></div>
+        <div class="panel-actions">
+          <button class="btn ghost" type="button" id="export-btn" onclick="openExportModal()">📤 Exportar</button>
+          <button class="btn danger" type="button" id="limpar-btn" onclick="askClearEvents('')">Limpar eventos</button>
+        </div>
+      </div>
+      <form class="filters" method="GET" id="filters-form" onsubmit="submitFilters(event)">
+        <div><label for="f-q">Buscar</label><input name="q" id="f-q" placeholder="ID, rota, IP, headers ou query..."></div>
+        <div><label for="f-endpoint">URL</label><select name="endpoint" id="f-endpoint"><option value="">Todas</option></select></div>
+        <div><label for="f-method">Método</label><select name="method" id="f-method"><option value="">Todos</option><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="PATCH">PATCH</option><option value="DELETE">DELETE</option></select></div>
+        <div><label for="f-order">Ordenar</label><select name="order" id="f-order"><option value="newest">Mais recentes</option><option value="oldest">Mais antigos</option><option value="method">Método</option></select></div>
+        <button class="btn primary" type="submit">Filtrar</button>
+        <a class="btn ghost" href="#" onclick="resetFilters();return false">Resetar</a>
+      </form>
+      <div class="events-list" id="events-list" style="margin-top:16px"><div class="empty">Carregando eventos...</div></div>
+      <div id="pagination-wrap"></div>
+    </section>
+  </main>
+
+  <footer class="footer">NHooks — open source. Feito para devs validarem webhooks, callbacks e integrações.</footer>
+</div>
+
+<!-- Minhas URLs -->
+<div class="modal-backdrop" id="endpoints-modal" onclick="closeEndpointsModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="endpoints-title">
+    <div class="modal-head"><div><h3 id="endpoints-title">Minhas URLs de ingestão</h3><p>Copie seus endpoints e salve o link administrativo para acessar de outros lugares.</p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideEndpointsModal()">×</button></div>
+    <div class="modal-body">
+      <div class="endpoint-grid" id="endpoint-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detalhe do evento -->
+<div class="modal-backdrop" id="event-modal" onclick="closeEventModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head"><div><h3 id="modal-title">Detalhes do evento</h3><p id="modal-subtitle"></p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideEventModal()">×</button></div>
+    <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Nova URL -->
+<div class="modal-backdrop" id="create-modal" onclick="closeCreateModal(event)">
+  <div class="modal small" role="dialog" aria-modal="true" aria-labelledby="create-title">
+    <div class="modal-head"><div><h3 id="create-title">Gerar nova URL</h3><p>A URL será criada em formato amigável.</p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideCreateModal()">×</button></div>
+    <div class="modal-body"><form onsubmit="createEndpoint(event)" class="create-form"><label for="endpoint-name">Nome da URL</label><input id="endpoint-name" required maxlength="100" placeholder="Ex: Teste PIX, Cliente X, Homologação"><label for="endpoint-secret">Segredo HMAC (opcional)</label><input id="endpoint-secret" type="password" maxlength="200" autocomplete="new-password" placeholder="Se preenchido, a assinatura será obrigatória"><small class="muted">Envie o header <code>X-Nhooks-Signature-256: sha256=...</code> em cada webhook.</small><button class="btn primary" type="submit">Gerar URL</button></form></div>
+  </div>
+</div>
+
+<!-- Confirmar -->
+<div class="modal-backdrop" id="confirm-modal" onclick="closeConfirmModal(event)">
+  <div class="modal small" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-head"><div><h3 id="confirm-title">Confirmar ação</h3><p id="confirm-message"></p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideConfirmModal()">×</button></div>
+    <div class="modal-body" style="display:flex;gap:10px;justify-content:flex-end"><button class="btn ghost" onclick="hideConfirmModal()">Cancelar</button><button class="btn danger" id="confirm-ok">Confirmar</button></div>
+  </div>
+</div>
+
+<!-- Sobre -->
+<div class="modal-backdrop" id="about-modal" onclick="closeAboutModal(event)">
+  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="modal-head"><div><h3 id="about-title">Sobre a ferramenta</h3><p>Um receiver simples para testar webhooks sem depender de ferramentas externas.</p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideAboutModal()">×</button></div>
+    <div class="modal-body"><div class="about-list">
+      <p><strong>O que é:</strong> o <b>NHooks</b> é um receptor de webhooks <b>self-hosted e open source</b>. Você gera URLs amigáveis de ingestão, recebe eventos HTTP e acompanha tudo ao vivo em um painel limpo — sem depender de terceiros.</p>
+      <p><strong>O que faz:</strong> gera URLs amigáveis (`/hook/...`), recebe `GET`, `POST`, `PUT`, `PATCH` e `DELETE`, registra headers, query string, body raw e payload JSON, com IP, método e content-type. Tem exportação (JSON/CSV), limites por painel, retenção automática e criptografia dos eventos.</p>
+      <p><strong>IA (opcional):</strong> resumo em linguagem natural, detecção de anomalias e sugestões a partir de cada evento, usando a <b>sua</b> chave (bring-your-own-key).</p>
+      <p><strong>Como funciona:</strong> as URLs ficam vinculadas ao seu link administrativo. Cada navegador tem seu próprio painel; salve o link administrativo para acessar de outro dispositivo.</p>
+      <p><strong>Stack:</strong> Go, SQLite embutido (ou PostgreSQL), sem runtime externo — deploy de 1 arquivo.</p>
+      <p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn primary" href="https://github.com/notrevetecnologia/nhooks" target="_blank" rel="noopener">GitHub do projeto</a>
+        <a class="btn ghost" href="https://notreve.com.br" target="_blank" rel="noopener">Notreve</a>
+        <a class="btn ghost" href="https://ia.notreve.com.br" target="_blank" rel="noopener">IA</a>
+      </p>
+    </div></div>
+  </div>
+</div>
+
+<!-- Exportar -->
+<div class="modal-backdrop" id="export-modal" onclick="closeExportModal(event)">
+  <div class="modal small" role="dialog" aria-modal="true" aria-labelledby="export-title">
+    <div class="modal-head"><div><h3 id="export-title">Exportar eventos</h3><p>Baixe os eventos em JSON ou CSV. Você pode exportar tudo ou apenas uma URL.</p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="hideExportModal()">×</button></div>
+    <div class="modal-body"><div class="create-form"><label for="export-format">Formato</label><select id="export-format"><option value="json">JSON</option><option value="csv">CSV</option></select><label for="export-endpoint">Escopo</label><select id="export-endpoint"><option value="">Todos os eventos</option></select><button class="btn primary" type="button" onclick="downloadExport()">Baixar exportação</button></div></div>
+  </div>
+</div>
+
+<!-- Configurar IA / token -->
+<div class="modal-backdrop" id="ai-modal" onclick="closeAiModal(event)">
+  <div class="modal medium" role="dialog" aria-modal="true" aria-labelledby="ai-title">
+    <div class="modal-head"><div><h3 id="ai-title">IA — sua chave</h3><p>Analise eventos com resumo, anomalias e sugestão. A IA usa a sua chave.</p></div><button class="icon-btn" type="button" aria-label="Fechar" onclick="closeAiModal()">×</button></div>
+    <div class="modal-body">
+      <div class="ai-status" id="ai-status"></div>
+      <form onsubmit="saveAiKey(event)" class="create-form">
+        <label for="ai-key-input">Sua chave de IA (<span id="ai-keys-url"></span>)</label>
+        <input id="ai-key-input" type="password" placeholder="sk-... (cole sua chave) — opcional" autocomplete="off">
+        <button class="btn primary" type="submit">Salvar chave</button>
+        <button class="btn ghost" type="button" onclick="clearAiKey()">Usar a do administrador</button>
+      </form>
+      <p class="ai-status" style="margin-top:10px">A chave fica salva só no seu navegador e é usada no servidor na hora de analisar — nunca é exibida.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const CFG = __NHOOKS_CONFIG__;
+const API = '/api';
+let currentEvent = null, confirmCallback = null, pollingBusy = false, pollingPaused = false, currentPage = 1;
+const modalFocus = new Map();
+let currentFingerprint = '', autoscrollEnabled = true, soundEnabled = false;
+
+document.addEventListener('DOMContentLoaded', init);
+async function init(){
+  const savedTheme=localStorage.getItem('nhooks_theme');
+  const autoTheme=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme || (CFG.theme==='auto'?autoTheme:(CFG.theme==='light'?'light':'dark')));
+  document.getElementById('brand-name').textContent = CFG.brandName;
+  document.title=CFG.title||CFG.brandName||'NHooks';
+  document.body.style.setProperty('--primary',CFG.brandColor||'#12948e');
+  document.body.style.setProperty('--secondary',CFG.secondary||'#0d7a75');
+  document.body.style.setProperty('--light-brand',CFG.dim||'#6dcfc9');
+  document.body.style.setProperty('--logo-height',CFG.logoHeight||'56px');
+  document.getElementById('app-eyebrow').textContent=CFG.eyebrow||'Ambiente próprio de testes';
+  document.getElementById('app-description').textContent=CFG.description||'';
+  if(CFG.faviconUrl) document.getElementById('app-favicon').href=CFG.faviconUrl;
+  if(CFG.logoUrl){const fallback=document.querySelector('.brand-fallback');const logo=document.createElement('img');logo.className='brand-logo';logo.alt=CFG.brandName||'Logo';logo.src=CFG.logoUrl;fallback.replaceWith(logo);}
+  document.getElementById('ai-keys-url').textContent = CFG.aiKeysURL || '';
+  document.getElementById('ai-nav').addEventListener('click', openAiModal);
+  if(!CFG.aiEnabled) document.getElementById('ai-nav').style.display='none';
+  if(CFG.mode==='share'){
+    ['minhas-urls','gerar-url','export-btn','limpar-btn','ai-nav'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+    const badge=document.createElement('span'); badge.className='btn soft'; badge.textContent='Visualização compartilhada'; document.querySelector('.nav-actions').insertBefore(badge, document.querySelector('.nav-actions').firstChild);
+  }
+  if(CFG.mode!=='share'){
+    try{ await postAction('bootstrap',{}); }catch(e){ document.getElementById('events-list').innerHTML='<div class="empty">Não foi possível iniciar o painel. Recarregue a página.</div>'; return; }
+  }
+  setInterval(refreshEvents, CFG.pollingMs || 3000);
+  refreshEvents(true);
+}
+
+function shareQ(){ return (CFG.mode==='share' && CFG.share) ? '&share='+encodeURIComponent(CFG.share) : ''; }
+function apiUrl(action, extra){
+  let u = API + '?action=' + encodeURIComponent(action);
+  if(extra){ const q = new URLSearchParams(extra); u += '&' + q.toString(); }
+  return u + shareQ();
+}
+async function getJSON(url){
+  const r = await fetch(url, {cache:'no-store'});
+  if(!r.ok){ let m=''; try{m=(await r.json()).message}catch(e){} throw new Error(m||('HTTP '+r.status)); }
+  return r.json();
+}
+
+async function refreshEvents(force){
+  if(pollingBusy || pollingPaused) return;
+  pollingBusy = true;
+  try{
+    const params = new URLSearchParams();
+    params.set('action','list_events');
+    if(document.getElementById('f-endpoint').value) params.set('endpoint', document.getElementById('f-endpoint').value);
+    if(document.getElementById('f-q').value) params.set('q', document.getElementById('f-q').value);
+    if(document.getElementById('f-method').value) params.set('method', document.getElementById('f-method').value);
+    params.set('order', document.getElementById('f-order').value || 'newest');
+    params.set('page', String(currentPage));
+    const res = await getJSON(API+'?'+params.toString()+shareQ());
+    if(res.success){
+      const r = res.data;
+      if(force || r.fingerprint !== currentFingerprint){
+        currentFingerprint = r.fingerprint;
+        document.getElementById('events-list').innerHTML = r.html.events;
+        document.getElementById('pagination-wrap').innerHTML = r.html.pagination || '';
+      }
+      document.getElementById('stat-total').textContent = r.stats.total;
+      document.getElementById('stat-filtered').textContent = r.stats.filtered;
+      document.getElementById('stat-endpoints').textContent = r.stats.endpoints;
+      document.getElementById('stat-storage-limit').textContent = r.stats.storage_limit;
+      document.getElementById('stat-events-limit').textContent = r.stats.events_limit;
+      document.getElementById('stat-last').textContent = r.stats.last_event;
+      document.getElementById('events-subtitle').textContent = r.html.events_subtitle;
+      document.getElementById('last-refresh').textContent = 'Atualizado agora';
+      renderEndpoints(r.endpoints, r.admin_url);
+      if(force) updateEndpointFilter(r.endpoints);
+    }
+  }catch(e){ document.getElementById('last-refresh').textContent='Falha ao atualizar'; if(!currentFingerprint) document.getElementById('events-list').innerHTML='<div class="empty">Não foi possível carregar os eventos. Tente novamente.</div>'; }
+  finally{ pollingBusy = false; }
+}
+
+function renderEndpoints(eps, adminUrl){
+  const grid = document.getElementById('endpoint-grid');
+  const exportSel = document.getElementById('export-endpoint');
+  const isShare = CFG.mode==='share';
+  const adminCard = (adminUrl && !isShare) ? (`<div class="endpoint-card" style="margin-bottom:12px">
+      <div class="endpoint-head"><strong>Link administrativo</strong><small>Use para acessar de outro dispositivo</small></div>
+      <div class="url-line"><input readonly value="${esc(adminUrl)}" onclick="this.select()"></div>
+      <div class="endpoint-actions"><button class="btn small" onclick="copyText('${escAttr(adminUrl)}')">Copiar link administrativo</button></div>
+    </div>`) : '';
+  if(!eps || !eps.length){ grid.innerHTML = adminCard + '<div class="empty">Nenhuma URL. Gere uma.</div>'; return; }
+  if(exportSel && !isShare) exportSel.innerHTML = '<option value="">Todos os eventos</option>' + eps.map(e=>`<option value="${esc(e.token||'')}">${esc(e.name)}</option>`).join('');
+  grid.innerHTML = adminCard + eps.map(e=>{
+    const writeBtns = isShare ? '' : `
+        <button class="btn small ghost" onclick="askClearEvents('${escAttr(e.token)}')">Limpar</button>
+        <button class="btn small danger" onclick="askDeleteEndpoint('${escAttr(e.token)}')">Excluir</button>`;
+    return `<div class="endpoint-card" data-token="${esc(e.token||'')}">
+      <div class="endpoint-head"><strong>${esc(e.name)}</strong></div>
+      <div class="url-line"><input readonly value="${esc(e.url)}" onclick="this.select()"></div>
+      <div class="endpoint-actions">
+        <button class="btn small" onclick="copyText('${escAttr(e.url)}')">Copiar URL</button>
+        ${isShare?'':`<a class="btn small" href="${esc(e.url)}?teste=1" target="_blank" rel="noopener">Testar GET</a>`}
+        ${isShare?'':`<button class="btn small ghost" onclick="copyText('${escAttr(e.share||'')}')">Copiar compartilhamento</button>`}
+        ${writeBtns}
+      </div>
+    </div>`;
+  }).join('');
+}
+function updateEndpointFilter(eps){
+  const sel = document.getElementById('f-endpoint');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas</option>' + eps.filter(e=>e.token).map(e=>`<option value="${esc(e.token)}">${esc(e.name)}</option>`).join('');
+  sel.value = cur;
+}
+
+async function openEvent(id){
+  setModalPause(true);
+  try{
+    const res = await getJSON(apiUrl('event_detail', {event_id:id}));
+    if(!res.success){ setModalPause(false); return toast('Evento não encontrado'); }
+    const e = res.data.event;
+    currentEvent = e;
+    document.getElementById('modal-title').textContent = (e.method||'') + ' · ' + (e.endpoint_name||'Endpoint');
+    document.getElementById('modal-subtitle').textContent = e.received_at + ' · ' + e.id;
+    const payloadHtml = '<div class="detail-card span-2"><h4>Payload</h4><pre class="code-block">'+esc(pretty(e.body_json||e.body_raw))+'</pre></div>';
+    const headersHtml = e.headers ? ('<div class="detail-card span-2"><h4>Headers</h4><pre class="code-block">'+esc(pretty(e.headers))+'</pre></div>') : '';
+    const queryHtml = (e.query && Object.keys(e.query).length) ? ('<div class="detail-card span-2"><h4>Query</h4><pre class="code-block">'+esc(pretty(e.query))+'</pre></div>') : '';
+    const summaryHtml = '<div class="detail-summary"><div><span>Método</span><strong>'+esc(e.method)+'</strong></div><div><span>Endpoint</span><strong>'+esc(e.endpoint_name)+'</strong></div><div><span>IP</span><strong>'+esc(e.ip)+'</strong></div><div><span>Content-Type</span><strong>'+esc(e.content_type)+'</strong></div></div>';
+    const aiAction = (CFG.mode!=='share' && CFG.aiEnabled) ? '<button class="btn primary" type="button" onclick="aiAnalyze(\''+escAttr(e.id)+'\')">Analisar com IA</button>' : '';
+    const aiButton = '<div class="detail-actions">'+aiAction+'<button class="btn ghost" type="button" onclick="copyCurrentEvent(\'body\')">Copiar body</button><button class="btn ghost" type="button" onclick="copyCurrentEvent(\'headers\')">Copiar headers</button></div>';
+    document.getElementById('detail-body').innerHTML = aiButton + '<div id="ai-panel"></div>' + summaryHtml + payloadHtml + headersHtml + queryHtml;
+    showModal('event-modal');
+  }catch(err){ setModalPause(false); toast('Evento não encontrado'); }
+}
+async function quickCopyEvent(id,type){ try{ const r=await getJSON(apiUrl('event_detail',{event_id:id})); const e=r.data.event; copyText(type==='body'?(e.body_raw||''):pretty(e.headers||'')); }catch(err){ toast('Não foi possível copiar'); } }
+function copyCurrentEvent(type){ if(!currentEvent) return toast('Evento não carregado'); copyText(type==='body'?(currentEvent.body_raw||''):pretty(currentEvent.headers||'')); }
+
+async function aiAnalyze(id){
+  const panel = document.getElementById('ai-panel');
+  const key = getAiKey();
+  if(!key && !CFG.serverKeySet){ panel.innerHTML='<div class="ai-card">⚠️ Configure sua chave de IA (botão 🤖 IA).</div>'; return; }
+  panel.innerHTML = '<div class="ai-card">🤖 Analisando com IA…</div>';
+  const data = {event_id:id, model:CFG.aiModel};
+  if(key) data.ai_key = key;
+  try{
+    const r = await fetch(API+'?action=ai_insight'+shareQ(), {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(data).toString()}).then(x=>x.json());
+    if(!r.success){ panel.innerHTML='<div class="ai-card">⚠️ '+esc(r.message||'Erro')+'</div>'; return; }
+    const d = r.data;
+    const anoms = (d.anomalies&&d.anomalies.length) ? ('<ul class="ai-anoms">'+d.anomalies.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul>') : '';
+    panel.innerHTML = '<div class="ai-card"><div class="hd"><span>🤖 '+esc(CFG.aiLabel||'IA')+'</span><span>'+esc(d.model||'')+'</span></div><p>'+esc(d.summary||'')+'</p>'+anoms+'<p><strong>Sugestão:</strong> '+esc(d.suggestion||'')+'</p></div>';
+  }catch(err){ panel.innerHTML='<div class="ai-card">⚠️ '+esc(err.message||'Erro')+'</div>'; }
+}
+
+async function createEndpoint(ev){
+  ev.preventDefault();
+  const name = document.getElementById('endpoint-name').value.trim();
+  const secret = document.getElementById('endpoint-secret').value.trim();
+  const button=ev.submitter;
+  if(!name) return toast('Informe um nome para a URL');
+  if(button) button.disabled=true;
+  try{
+    const r = await fetch(API+'?action=create_endpoint', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({name,secret}).toString()}).then(x=>x.json());
+    if(r.success){ toast('URL criada'); document.getElementById('endpoint-name').value=''; document.getElementById('endpoint-secret').value=''; hideCreateModal(); refreshEvents(true); }
+    else toast(r.message||'Erro');
+  }catch(e){ toast('Erro ao criar URL'); }
+  finally{ if(button) button.disabled=false; }
+}
+async function postAction(action,data){ const r=await fetch(API+'?action='+encodeURIComponent(action),{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data||{}).toString()}); let j={}; try{j=await r.json()}catch(e){} if(!r.ok||!j.success) throw new Error(j.message||'Falha na operação'); return j; }
+async function askDeleteEndpoint(token){ showConfirm('Excluir URL', 'Excluir esta URL e todos os eventos?', async ()=>{ const r=await postAction('delete_endpoint',{token}); toast(r.data.deleted?'URL removida':'URL não encontrada'); currentPage=1; await refreshEvents(true); }); }
+function askDeleteEvent(id){ if(CFG.mode==='share') return; showConfirm('Excluir evento', 'Excluir este evento?', async ()=>{ await postAction('delete_event',{event_id:id}); toast('Evento excluído'); await refreshEvents(true); }); }
+function askClearEvents(token){ if(CFG.mode==='share') return; showConfirm('Limpar eventos', 'Apagar todos os eventos'+(token?' desta URL':'')+'?', async ()=>{ const r=await postAction('clear_events',{token:token||''}); toast((r.data?r.data.deleted:0)+' removidos'); currentPage=1; await refreshEvents(true); }); }
+function downloadExport(){
+  const fmt = document.getElementById('export-format').value||'json';
+  const ep = document.getElementById('export-endpoint').value||'';
+  const params = new URLSearchParams({action:'export_events', format:fmt});
+  if(ep) params.set('endpoint', ep);
+  window.location.href = API+'?'+params.toString();
+}
+function submitFilters(ev){ if(ev) ev.preventDefault(); currentPage=1; refreshEvents(true); }
+function resetFilters(){ ['f-q','f-endpoint','f-method'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-order').value='newest'; currentPage=1; refreshEvents(true); }
+function goPage(page){ currentPage=Math.max(1,page); refreshEvents(true); window.scrollTo({top:document.querySelector('.layout').offsetTop-20,behavior:'smooth'}); }
+
+// IA key (BYOK)
+function getAiKey(){ const k=(localStorage.getItem('nhooks_ai_key')||'').trim(); return k||''; }
+function openAiModal(){ document.getElementById('ai-status').textContent = aiStatusText(); document.getElementById('ai-key-input').value = ''; showModal('ai-modal','#ai-key-input'); }
+function closeAiModal(e){ if(!e || e.target.id==='ai-modal') hideModal('ai-modal'); }
+function aiStatusText(){
+  if(getAiKey()) return '✅ Usando a SUA chave de IA.';
+  if(CFG.serverKeySet) return '✅ IA liberada pelo administrador (usa a chave do servidor). Você ainda pode usar a sua.';
+  return 'Sem chave ainda: cole a sua para usar a IA.';
+}
+function saveAiKey(ev){ ev.preventDefault(); const v=document.getElementById('ai-key-input').value.trim(); if(v){ localStorage.setItem('nhooks_ai_key', v); document.getElementById('ai-status').textContent=aiStatusText(); toast('Chave salva (fica só no seu navegador)'); } }
+function clearAiKey(){ localStorage.removeItem('nhooks_ai_key'); document.getElementById('ai-status').textContent=aiStatusText(); toast(CFG.serverKeySet?'Usando a chave do administrador':'Chave local removida'); }
+
+// modais
+function openEndpointsModal(){ showModal('endpoints-modal'); }
+function hideEndpointsModal(){ hideModal('endpoints-modal'); }
+function closeEndpointsModal(e){ if(e.target.id==='endpoints-modal') hideEndpointsModal(); }
+function openCreateEndpoint(){ showModal('create-modal','#endpoint-name'); }
+function hideCreateModal(){ hideModal('create-modal'); }
+function closeCreateModal(e){ if(e.target.id==='create-modal') hideCreateModal(); }
+function openAboutModal(){ showModal('about-modal'); }
+function hideAboutModal(){ hideModal('about-modal'); }
+function closeAboutModal(e){ if(e.target.id==='about-modal') hideAboutModal(); }
+function openExportModal(){ showModal('export-modal','#export-format'); }
+function hideExportModal(){ hideModal('export-modal'); }
+function closeExportModal(e){ if(e.target.id==='export-modal') hideExportModal(); }
+function hideEventModal(){ hideModal('event-modal'); currentEvent=null; }
+function closeEventModal(e){ if(e.target.id==='event-modal') hideEventModal(); }
+function showConfirm(title,msg,cb){ confirmCallback=cb; document.getElementById('confirm-title').textContent=title; document.getElementById('confirm-message').textContent=msg; showModal('confirm-modal','#confirm-ok'); document.getElementById('confirm-ok').onclick=async()=>{ const fn=confirmCallback,btn=document.getElementById('confirm-ok'); btn.disabled=true; try{ if(fn) await fn(); hideConfirmModal(); }catch(e){ toast(e.message||'Falha na operação'); }finally{ btn.disabled=false; } }; }
+function hideConfirmModal(){ hideModal('confirm-modal'); confirmCallback=null; }
+function closeConfirmModal(e){ if(e.target.id==='confirm-modal') hideConfirmModal(); }
+function setModalPause(v){ pollingPaused = v || !!document.querySelector('.modal-backdrop.active'); }
+function showModal(id,focusSelector){const backdrop=document.getElementById(id);modalFocus.set(backdrop,document.activeElement);backdrop.classList.add('active');setModalPause(true);setTimeout(()=>{const target=(focusSelector&&backdrop.querySelector(focusSelector))||backdrop.querySelector('button,input,select,a[href]');if(target)target.focus();},0);}
+function hideModal(id){const backdrop=document.getElementById(id);backdrop.classList.remove('active');setModalPause(false);const target=modalFocus.get(backdrop);modalFocus.delete(backdrop);if(target&&target.focus)target.focus();}
+function toggleTheme(){ const cur=document.documentElement.getAttribute('data-theme'); const next = cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme', next); localStorage.setItem('nhooks_theme',next); }
+
+document.addEventListener('keydown',e=>{ const active=[...document.querySelectorAll('.modal-backdrop.active')].pop();if(!active)return;if(e.key==='Escape'){active.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(e.key==='Tab'){const items=[...active.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href]')];if(!items.length)return;const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}} });
+
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast('Copiado')).catch(()=>fallbackCopy(t));
+  } else { fallbackCopy(t); }
+}
+function fallbackCopy(t){
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.top='0'; ta.style.left='-9999px'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast('Copiado'); }catch(e){ toast('Não foi possível copiar'); }
+  document.body.removeChild(ta);
+}
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escAttr(s){ return (s==null?'':s).replace(/'/g,'\\\''); }
+function pretty(v){ if(typeof v==='string'){ try{return JSON.stringify(JSON.parse(v),null,2)}catch(e){return v} } return JSON.stringify(v,null,2); }
+</script>
+</body>
+</html>

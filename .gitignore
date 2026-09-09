@@ -1,0 +1,8 @@
+.env
+*.db
+*.db-wal
+*.db-shm
+/nhooks
+/nhooks.exe
+/dist/
+.DS_Store
